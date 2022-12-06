@@ -11,6 +11,10 @@ app.get("/", (req, res) => {
   res.send("Hello!");
 }); //apply to path: http://localhost:8080/
 
+app.get("/hello", (req, res) => {
+  res.send("<html><body>Hello <b>World</b></body></html>\n");
+});
+
 app.get("/urls.json", (req, res) => {
   res.json(urlDatabase); //prints out a JSON string representing the entire urlDatabase object.
 }); //apply to path: http://localhost:8080/urls.json
