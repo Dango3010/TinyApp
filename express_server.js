@@ -9,7 +9,11 @@ const urlDatabase = {
 
 app.get("/", (req, res) => {
   res.send("Hello!");
-});
+}); //apply to path: http://localhost:8080/
+
+app.get("/urls.json", (req, res) => {
+  res.json(urlDatabase); //prints out a JSON string representing the entire urlDatabase object.
+}); //apply to path: http://localhost:8080/urls.json
 
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
