@@ -7,7 +7,12 @@ app.set("view engine", "ejs"); //tells the Express app to use EJS as its templat
 const urlDatabase = {
   "b2xVn2": "http://www.lighthouselabs.ca",
   "9sm5xK": "http://www.google.com"
-};
+}; //used to keep track of all the URLs and their shortened forms. 
+
+app.get("/urls", (req, res) => {
+  const templateVars = { urls: urlDatabase }; //urls = the key of the variable urlDatabase that we wanna put into the HTML file
+  res.render("urls_index", templateVars); //name of the template + an object
+});
 
 app.get("/", (req, res) => {
   res.send("Hello!");
