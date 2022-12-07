@@ -14,6 +14,13 @@ app.get("/urls", (req, res) => {
   res.render("urls_index", templateVars); //name of the template + an object
 });
 
+app.get("/urls/:id", (req, res) => { 
+  //the : in front of id means that id is a route parameter. 
+  const urlId = req.params.id; // = shortened URL = b2xVn2 / 9sm5xK
+  const templateVars = { id: req.params.id, longURL: urlDatabase[urlId]};
+  res.render("urls_show", templateVars);
+});
+
 app.get("/", (req, res) => {
   res.send("Hello!");
 }); //apply to path: http://localhost:8080/
