@@ -16,6 +16,13 @@ app.post("/urls", (req, res) => {
   res.redirect(`/urls/${id}`); //when the server receives a POST request to /urls, it responds with a redirection to /urls/:id.
 });
 
+//to handle the delete button
+app.post("/urls/:id/delete", (req, res) => {
+  const urlId = req.params.id; // = shortened URL = b2xVn2 / 9sm5xK
+  delete urlDatabase[urlId]; //remove the URLs and its id
+  res.redirect("/urls"); //redirect to the home page
+});
+
 //randomly create a short URL id
 function generateRandomString() {
     var result = '';
