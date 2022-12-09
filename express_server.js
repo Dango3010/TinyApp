@@ -16,6 +16,13 @@ app.post("/urls", (req, res) => {
   res.redirect(`/urls/${id}`); //when the server receives a POST request to /urls, it responds with a redirection to /urls/:id.
 });
 
+//to handle the edit button
+app.post("/urls/:id/edit", (req, res) => {
+  const urlId = req.params.id; // = shortened URL = b2xVn2 / 9sm5xK
+  urlDatabase[urlId] = req.body.longURL; //update the longURL of an ID
+  res.redirect("/urls"); //redirect to the home page
+});
+
 //to handle the delete button
 app.post("/urls/:id/delete", (req, res) => {
   const urlId = req.params.id; // = shortened URL = b2xVn2 / 9sm5xK
