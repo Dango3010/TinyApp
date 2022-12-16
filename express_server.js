@@ -69,8 +69,8 @@ app.post('/register', (req, res) => {
   const email = req.body.email;
   const password = req.body.password;
 
-  if (!email || !password) res.send('400 status code');
-  if(getUserByEmail(email) !== null) res.send('400 status code');
+  if (!email || !password) return res.send('400 status code');
+  if(getUserByEmail(email)) return res.send('400 status code');
 
   users[userId] = {
     id: userId,
