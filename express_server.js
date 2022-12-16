@@ -1,7 +1,7 @@
 const cookieParser = require('cookie-parser')
 const express = require("express");
 const app = express();
-const PORT = 8080; // default port 8080
+const PORT = 8080; //default port 8080
 
 app.set("view engine", "ejs"); //tells the Express app to use EJS as its templating engine.
 app.use(cookieParser());
@@ -32,17 +32,64 @@ app.post("/urls/:id/delete", (req, res) => {
   res.redirect("/urls"); //redirect to the home page
 });
 
+const users = {
+  userRandomID: {
+    id: "userRandomID",
+    email: "user@example.com",
+    password: "purple-monkey-dinosaur",
+  },
+  user2RandomID: {
+    id: "user2RandomID",
+    email: "user2@example.com",
+    password: "dishwasher-funk",
+  },
+};
+
 //to handle the login form
 app.post("/login", (req, res) => {
-  res.cookie('username', req.body.username) //set a cookie named username to the value submitted
   res.redirect("/urls"); //redirect to the home page
 });
 
-//how to delete an username in cookie
+//to handle the logout button, to delete an username in cookie
 app.post("/logout", (req, res) => {
-  res.clearCookie('username') //delete an username
+  res.clearCookie('user_id');
   res.redirect("/urls"); //redirect to the home page
 });
+
+//go to the registration page
+app.get("/register", (req, res) => {
+  const userID = req.cookies['user_id'];
+  const templateVars = {user: users[userID]};
+  res.render("urls_register", templateVars);
+});
+
+//how to register a new user
+app.post('/register', (req, res) => {
+  const userId = generateRandomString();
+  const email = req.body.email;
+  const password = req.body.password;
+
+  if (!email || !password) res.send('400 status code');
+  if(getUserByEmail(email) !== null) res.send('400 status code');
+
+  users[userId] = {
+    id: userId,
+    email: email,
+    password: password
+  };
+  res.cookie('user_id', userId);
+  console.log('users:', users);
+  res.redirect("/urls");
+});
+
+const getUserByEmail = (Email) => {
+  for (let user in users) {
+    if (Email === users[user].email) {
+      return user;
+    }
+  }
+  return null; //= new email, not in the users object yet
+}
 
 //randomly create a short URL id
 function generateRandomString() {
@@ -69,20 +116,26 @@ const urlDatabase = {
 
 app.get("/urls", (req, res) => {
   console.log('urlDatabase:', urlDatabase);
-  const templateVars = { urls: urlDatabase, username: req.cookies["username"] }; //urls = the key of the variable urlDatabase that we wanna put into the HTML file
+  const userID = req.cookies['user_id']
+  const templateVars = { urls: urlDatabase, username: req.cookies["username"], user: users[userID] }; //urls = the key of the variable urlDatabase that we wanna put into the HTML file
   res.render("urls_index", templateVars); //name of the template + an object
 });
 
 //a GET route that renders the page with the form to present the form to the user
 app.get("/urls/new", (req, res) => {
-  const templateVars = {username: req.cookies["username"]};
+  const userID = req.cookies['user_id'];
+  const templateVars = {username: req.cookies["username"], user: users[userID]};
   res.render("urls_new", templateVars);
 });
 
 app.get("/urls/:id", (req, res) => { 
   //the : in front of id means that id is a route parameter. 
   const urlId = req.params.id; // = shortened URL = b2xVn2 / 9sm5xK
-  const templateVars = { id: req.params.id, longURL: urlDatabase[urlId], username: req.cookies["username"],};
+  const userID = req.cookies['user_id'];
+  const templateVars = { 
+    id: req.params.id, longURL: urlDatabase[urlId], username: req.cookies["username"],
+    user: users[userID]
+  };
   res.render("urls_show", templateVars);
 });
 
