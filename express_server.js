@@ -1,18 +1,23 @@
-const cookieParser = require('cookie-parser')
+const cookieSession = require('cookie-session')
 const express = require("express");
 const app = express();
 const PORT = 8080; //default port 8080
 const bcrypt = require("bcryptjs");
+const getUserByEmail = require('./helpers');
 
 app.set("view engine", "ejs"); //tells the Express app to use EJS as its templating engine.
-app.use(cookieParser());
+app.use(cookieSession({
+  name: 'session',
+  keys: ['mushroom', 'broccoli'],
+  maxAge: 24 * 60 * 60 * 1000 // 24 hours
+}))
 
 //for a post request, form submission:
 app.use(express.urlencoded({ extended: true }));
 //this body-parser library will convert the request body from a Buffer into string that we can read
 
 app.post("/urls", (req, res) => {
-  const userID = req.cookies['user_id'];
+  const userID = req.session.user_id;
   if(!userID) return res.send('you cannot shorten URLs because you are not logged in');
 
   console.log('req.body:', req.body); //req.body = the POST request body = the long URL we submit
@@ -28,7 +33,7 @@ app.post("/urls", (req, res) => {
 //to handle the edit button
 app.post("/urls/:id/edit", (req, res) => {
   const urlId = req.params.id; // = shortened URL = b2xVn2 / 9sm5xK
-  const userID = req.cookies['user_id'];
+  const userID = req.session.user_id;
   if (!urlDatabase[urlId]) return res.send('the URL id does not exist');
   if(!userID) return res.send('you need to login or register first');
   if (urlDatabase[urlId].userID !== userID) return res.send('you do not own this URL page');
@@ -40,7 +45,7 @@ app.post("/urls/:id/edit", (req, res) => {
 //to handle the delete button
 app.post("/urls/:id/delete", (req, res) => {
   const urlId = req.params.id; // = shortened URL = b2xVn2 / 9sm5xK
-  const userID = req.cookies['user_id'];
+  const userID = req.session.user_id;
   if (!urlDatabase[urlId]) return res.send('the URL id does not exist');
   if(!userID) return res.send('you need to login or register first');
   if (urlDatabase[urlId].userID !== userID) return res.send('you do not own this URL page');
@@ -65,19 +70,19 @@ const users = {
 //to handle the login form
 app.post("/login", (req, res) => {
   const email = req.body.email;
-  const user = getUserByEmail(email);
+  const user = getUserByEmail(email, users);
   if(!user) return res.status(403).send('user not found');
   const pass = req.body.password;
   const password = bcrypt.compareSync(pass, user.password); //if matched, password = true
   if(user && !password) return res.status(403).send('user not found');
 
-  res.cookie('user_id', user.id); //create a current user id on cookie
+  req.session.user_id = user.id; //create a current user id on cookie
   console.log('users:', users);
   res.redirect("/urls");
 });
 
 app.get("/login", (req, res) => {
-  const userID = req.cookies['user_id'];
+  const userID = req.session.user_id;
   if(userID) return res.redirect('/urls');
   const templateVars = {user: users[userID]};
   res.render("urls_login", templateVars);
@@ -85,19 +90,19 @@ app.get("/login", (req, res) => {
 
 //to handle the logout button
 app.post("/logout", (req, res) => {
-  res.clearCookie('user_id');
+  req.session = null;
   res.redirect("/login");
 });
 
 //go to the registration page
 app.get("/register", (req, res) => {
-  const userID = req.cookies['user_id'];
+  const userID = req.session.user_id;
   if(userID) return res.redirect('/urls');
   const templateVars = {user: users[userID]};
   res.render("urls_register", templateVars);
 });
 
-//how to register a new user
+//how to register for a new user
 app.post('/register', (req, res) => {
   const userId = generateRandomString();
   const email = req.body.email;
@@ -105,26 +110,17 @@ app.post('/register', (req, res) => {
   const password = bcrypt.hashSync(pass, 10);
 
   if (!email || !password) return res.send('400 status code');
-  if(getUserByEmail(email)) return res.send('400 status code');
+  if(getUserByEmail(email, users)) return res.status(400).send('cannot use the same email to register');
 
   users[userId] = {
     id: userId,
     email: email,
     password: password
   };
-  res.cookie('user_id', userId);
+  req.session.user_id = userId;
   console.log('users:', users);
   res.redirect("/urls");
 });
-
-const getUserByEmail = (Email) => {
-  for (let user in users) {
-    if (Email === users[user].email) {
-      return users[user];
-    }
-  }
-  return null; //= new email, not in the users object yet
-}
 
 //randomly create a short URL id
 function generateRandomString() {
@@ -170,7 +166,7 @@ const urlDatabase = {
 
 app.get("/urls", (req, res) => {
   console.log('urlDatabase:', urlDatabase);
-  const userID = req.cookies['user_id']
+  const userID = req.session.user_id;
   if (!userID) return res.send('you need to login or register for an account to view the URLs list')
 
   const urlList = urlsForUser(userID);
@@ -180,7 +176,7 @@ app.get("/urls", (req, res) => {
 
 //a GET route that renders the page with the form to present the form to the user
 app.get("/urls/new", (req, res) => {
-  const userID = req.cookies['user_id'];
+  const userID = req.session.user_id;
   if(!userID) return res.redirect('/login');
   const templateVars = {user: users[userID]};
   res.render("urls_new", templateVars);
@@ -189,7 +185,7 @@ app.get("/urls/new", (req, res) => {
 app.get("/urls/:id", (req, res) => { 
   //the : in front of id means that id is a route parameter. 
   const urlId = req.params.id; // = shortened URL = b2xVn2 / 9sm5xK
-  const userID = req.cookies['user_id'];
+  const userID = req.session.user_id;
   if (!userID) return res.send('you need to login to view the URL page')
   if (urlDatabase[urlId].userID !== userID) return res.send('you do not own this URL page');
 
