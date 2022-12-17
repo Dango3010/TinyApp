@@ -2,6 +2,7 @@ const cookieParser = require('cookie-parser')
 const express = require("express");
 const app = express();
 const PORT = 8080; //default port 8080
+const bcrypt = require("bcryptjs");
 
 app.set("view engine", "ejs"); //tells the Express app to use EJS as its templating engine.
 app.use(cookieParser());
@@ -64,11 +65,11 @@ const users = {
 //to handle the login form
 app.post("/login", (req, res) => {
   const email = req.body.email;
-  const password = req.body.password;
   const user = getUserByEmail(email);
-
   if(!user) return res.status(403).send('user not found');
-  if(user && password !== user.password) return res.status(403).send('user not found');
+  const pass = req.body.password;
+  const password = bcrypt.compareSync(pass, user.password); //if matched, password = true
+  if(user && !password) return res.status(403).send('user not found');
 
   res.cookie('user_id', user.id); //create a current user id on cookie
   console.log('users:', users);
@@ -100,7 +101,8 @@ app.get("/register", (req, res) => {
 app.post('/register', (req, res) => {
   const userId = generateRandomString();
   const email = req.body.email;
-  const password = req.body.password;
+  const pass = req.body.password;
+  const password = bcrypt.hashSync(pass, 10);
 
   if (!email || !password) return res.send('400 status code');
   if(getUserByEmail(email)) return res.send('400 status code');
