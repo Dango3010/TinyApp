@@ -23,15 +23,8 @@
             <button type="Submit" class="btn btn-primary">Logout</button>
           </form>
         <% } else{ %>
-          <form method="POST" action="/login">
-            <input
-              type="text"
-              name="user_id"
-              placeholder='enter an user id'
-              style="width: 300px; margin: 1em"
-            />
-            <button type="submit" class="btn btn-primary">Login</button>
-          </form>
+          <a class="nav-item nav-link" href="/register">To register</a>
+          <a class="nav-item nav-link" href="/login">Have an account? Let's login</a>
         <% } %>
       
       </div>

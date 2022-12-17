@@ -11,6 +11,9 @@ app.use(express.urlencoded({ extended: true }));
 //this body-parser library will convert the request body from a Buffer into string that we can read
 
 app.post("/urls", (req, res) => {
+  const userID = req.cookies['user_id'];
+  if(!userID) return res.send('you cannot shorten URLs because you are not logged in');
+
   console.log('req.body:', req.body); //req.body = the POST request body = the long URL we submit
   //its output: in the urls_new template, we specified this longURL key using the input attribute name. The value is the content from the input field. This lovely formatting is courtesy of the Express library!
   const id = generateRandomString();
@@ -47,18 +50,35 @@ const users = {
 
 //to handle the login form
 app.post("/login", (req, res) => {
-  res.redirect("/urls"); //redirect to the home page
+  const email = req.body.email;
+  const password = req.body.password;
+  const user = getUserByEmail(email);
+
+  if(!user) return res.status(403).send('user not found');
+  if(user && password !== user.password) return res.status(403).send('user not found');
+
+  res.cookie('user_id', user.id); //create a current user id on the cookie
+  console.log('users:', users);
+  res.redirect("/urls");
 });
 
-//to handle the logout button, to delete an username in cookie
+app.get("/login", (req, res) => {
+  const userID = req.cookies['user_id'];
+  if(userID) return res.redirect('/urls');
+  const templateVars = {user: users[userID]};
+  res.render("urls_login", templateVars);
+});
+
+//to handle the logout button
 app.post("/logout", (req, res) => {
   res.clearCookie('user_id');
-  res.redirect("/urls"); //redirect to the home page
+  res.redirect("/login");
 });
 
 //go to the registration page
 app.get("/register", (req, res) => {
   const userID = req.cookies['user_id'];
+  if(userID) return res.redirect('/urls');
   const templateVars = {user: users[userID]};
   res.render("urls_register", templateVars);
 });
@@ -85,7 +105,7 @@ app.post('/register', (req, res) => {
 const getUserByEmail = (Email) => {
   for (let user in users) {
     if (Email === users[user].email) {
-      return user;
+      return users[user];
     }
   }
   return null; //= new email, not in the users object yet
@@ -117,14 +137,15 @@ const urlDatabase = {
 app.get("/urls", (req, res) => {
   console.log('urlDatabase:', urlDatabase);
   const userID = req.cookies['user_id']
-  const templateVars = { urls: urlDatabase, username: req.cookies["username"], user: users[userID] }; //urls = the key of the variable urlDatabase that we wanna put into the HTML file
+  const templateVars = { urls: urlDatabase, user: users[userID] }; //urls = the key of the variable urlDatabase that we wanna put into the HTML file
   res.render("urls_index", templateVars); //name of the template + an object
 });
 
 //a GET route that renders the page with the form to present the form to the user
 app.get("/urls/new", (req, res) => {
   const userID = req.cookies['user_id'];
-  const templateVars = {username: req.cookies["username"], user: users[userID]};
+  if(!userID) return res.redirect('/login');
+  const templateVars = {user: users[userID]};
   res.render("urls_new", templateVars);
 });
 
@@ -133,7 +154,7 @@ app.get("/urls/:id", (req, res) => {
   const urlId = req.params.id; // = shortened URL = b2xVn2 / 9sm5xK
   const userID = req.cookies['user_id'];
   const templateVars = { 
-    id: req.params.id, longURL: urlDatabase[urlId], username: req.cookies["username"],
+    id: req.params.id, longURL: urlDatabase[urlId],
     user: users[userID]
   };
   res.render("urls_show", templateVars);
