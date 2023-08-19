@@ -14,20 +14,18 @@ app.use(cookieSession({
 
 //for a post request, form submission:
 app.use(express.urlencoded({ extended: true }));
-//this body-parser library will convert the request body from a Buffer into string that we can read
 
 app.post("/urls", (req, res) => {
   const userID = req.session.user_id;
   if(!userID) return res.send('you cannot shorten URLs because you are not logged in');
-
-  console.log('req.body:', req.body); //req.body = the POST request body = the long URL we submit
-  //its output: in the urls_new template, we specified this longURL key using the input attribute name. The value is the content from the input field. This lovely formatting is courtesy of the Express library!
+  
+  //add new id-longURL key object-key pair to the object
   const id = generateRandomString();
   urlDatabase[id] = {
     'longURL': req.body.longURL,
     'userID': userID
-  }; //add new id-longURL key object-key pair to the object
-  res.redirect(`/urls/${id}`); //when the server receives a POST request to /urls, it responds with a redirection to /urls/:id.
+  }; 
+  res.redirect(`/urls/${id}`); 
 });
 
 //to handle the edit button
@@ -38,20 +36,20 @@ app.post("/urls/:id/edit", (req, res) => {
   if(!userID) return res.send('you need to login or register first');
   if (urlDatabase[urlId].userID !== userID) return res.send('you do not own this URL page');
 
-  urlDatabase[urlId].longURL = req.body.longURL; //update the longURL of an ID
-  res.redirect("/urls"); //redirect to the home page
+  urlDatabase[urlId].longURL = req.body.longURL; 
+  res.redirect("/urls"); 
 });
 
 //to handle the delete button
 app.post("/urls/:id/delete", (req, res) => {
-  const urlId = req.params.id; // = shortened URL = b2xVn2 / 9sm5xK
+  const urlId = req.params.id; 
   const userID = req.session.user_id;
   if (!urlDatabase[urlId]) return res.send('the URL id does not exist');
   if(!userID) return res.send('you need to login or register first');
   if (urlDatabase[urlId].userID !== userID) return res.send('you do not own this URL page');
 
-  delete urlDatabase[urlId]; //remove the URLs and its id
-  res.redirect("/urls"); //redirect to the home page
+  delete urlDatabase[urlId]; 
+  res.redirect("/urls"); 
 });
 
 const users = {
@@ -76,8 +74,7 @@ app.post("/login", (req, res) => {
   const password = bcrypt.compareSync(pass, user.password); //if matched, password = true
   if(user && !password) return res.status(403).send('user not found');
 
-  req.session.user_id = user.id; //create a current user id on cookie
-  console.log('users:', users);
+  req.session.user_id = user.id; 
   res.redirect("/urls");
 });
 
@@ -118,7 +115,6 @@ app.post('/register', (req, res) => {
     password: password
   };
   req.session.user_id = userId;
-  console.log('users:', users);
   res.redirect("/urls");
 });
 
@@ -143,16 +139,14 @@ const urlsForUser = (id) => {
 };
 
 app.get("/u/:id", (req, res) => {
-  const urlId = req.params.id; // = shortened URL = b2xVn2 / 9sm5xK
+  const urlId = req.params.id; 
   if (!urlDatabase[urlId]) return res.send('The url id cannot be found');
 
   const longURL = urlDatabase[urlId].longURL;
   res.redirect(longURL);
 });
-//e.g. when we click the link: http://localhost:8080/u/b2xVn2, we will be taken to http://www.lighthouselabs.ca.
-//the short URL ID links have /u/id by default by the urls_show template 
-//we can also test it by using curl command in the terminal 
 
+//used to keep track of all the URLs and their shortened forms. 
 const urlDatabase = {
   b6UTxQ: {
     longURL: "https://www.tsn.ca",
@@ -162,16 +156,15 @@ const urlDatabase = {
     longURL: "https://www.google.ca",
     userID: "aJ48lW",
   },
-}; //used to keep track of all the URLs and their shortened forms. 
+}; 
 
 app.get("/urls", (req, res) => {
-  console.log('urlDatabase:', urlDatabase);
   const userID = req.session.user_id;
   if (!userID) return res.send('you need to login or register for an account to view the URLs list')
 
   const urlList = urlsForUser(userID);
   const templateVars = { urls: urlList, user: users[userID] };
-  res.render("urls_index", templateVars); //name of the template + an object
+  res.render("urls_index", templateVars); 
 });
 
 //a GET route that renders the page with the form to present the form to the user
@@ -183,8 +176,7 @@ app.get("/urls/new", (req, res) => {
 });
 
 app.get("/urls/:id", (req, res) => { 
-  //the : in front of id means that id is a route parameter. 
-  const urlId = req.params.id; // = shortened URL = b2xVn2 / 9sm5xK
+  const urlId = req.params.id; 
   const userID = req.session.user_id;
   if (!userID) return res.send('you need to login to view the URL page')
   if (urlDatabase[urlId].userID !== userID) return res.send('you do not own this URL page');
@@ -197,7 +189,7 @@ app.get("/urls/:id", (req, res) => {
 });
 
 app.get("/", (req, res) => {
-  res.send("Hello!");
+  res.send("Hello! Please go to http://localhost:8080/register url");
 }); //apply to path: http://localhost:8080/
 
 app.get("/hello", (req, res) => {
@@ -205,8 +197,8 @@ app.get("/hello", (req, res) => {
 });
 
 app.get("/urls.json", (req, res) => {
-  res.json(urlDatabase); //prints out a JSON string representing the entire urlDatabase object.
-}); //apply to path: http://localhost:8080/urls.json
+  res.json(urlDatabase); 
+}); 
 
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
